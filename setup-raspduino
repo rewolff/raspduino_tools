@@ -1,0 +1,87 @@
+#!/bin/sh
+# 
+# This script prepares avrdude for raspduino. 
+#
+myid=`id -u`
+if [ $myid -ne 0 ] ; then
+   echo "You need to run this script as root. e.g. sudo $0"
+   exit 1
+fi
+
+required_programs="avrdude arduino"
+for i in $required_programs ; do
+   if [ ! -f /usr/bin/$i ] ; then
+      # $i is not installed, lets install it. 
+      echo  "----- Installing $i -----" 
+      apt-get install $i
+   fi
+fi
+
+avrdudefile=`file /usr/bin/avrdude`
+
+case "$avrdudefile" in 
+   *"ELF 32-bit LSB executable, ARM"*) 
+      #
+      if [ ! -f /usr/bin/avrdude.bin ] ; then
+         mv /usr/bin/avrdude /usr/bin/avrdude.bin
+      else 
+         echo "Avrdude.bin already exists. Cannot continue."
+         exit 1
+      fi
+      cat << EOF > /usr/bin/avrdude
+#!/bin/sh
+# This script replaces avrdude and resets the raspduino
+# in case you don't have the software DTR patch. 
+[ -f /etc/have_software_DTR ] || sudo reset_raspduino
+avrdude.bin "$@"
+EOF
+      chmod 755 /usr/bin/avrdude
+      cat << EOF
+#!/bin/sh
+echo "25" > /sys/class/gpio/export
+echo "out" > /sys/class/gpio/gpio25/direction
+echo "1" > /sys/class/gpio/gpio25/value
+sleep 0.05
+echo "0" > /sys/class/gpio/gpio25/value
+echo "25" > /sys/class/gpio/unexport
+EOF
+      chmod 755 /usr/bin/reset_raspduino
+      ;;
+   *"POSIX shell script"*) 
+      echo "It seems this script has already been run. No changes. Done!"
+      exit 0
+      ;;
+   *) 
+      echo "Your avrdude is weird. Not an arm executeable but neither a shell script. "
+      echo "cannot continue."
+      exit 1
+      ;;
+esac
+
+cp  80-raspduino.rules /etc/udev/rules.d
+
+if grep -q ttyAMA0 /etc/inittab ; then
+   # ttyAMA0 is present in inittab...   
+   if grep -q ^[^#].*ttyAMA0 ; then
+      # ... and not commented out. Lets do that. 
+      mv /etc/inittab /etc/inittab.orig
+      sed -e 's/\(.*\)ttyAMA0/#\1ttyAMA0/' /etc/inittab.orig > /etc/inittab
+      chmod 644 /etc/inittab 
+   else 
+      echo "You already have ttyAMA commented out. Good."
+   fi
+
+else
+   # No ttyAMA in inittab
+   echo "You have no ttyAMA in your inittab. That's weird for a Raspberry pi system."
+   # Lets assume that's ok. 
+fi
+
+if grep -q ttyAMA0 /boot/cmdline.txt ; then
+   mv /boot/cmdline.txt /boot/cmdline.txt.orig
+   # remove ttyAMA references from cmdline.txt. Usually console= and kgdboc= . 
+   sed -e 's/[^ ]*ttyAMA0[^ ]*//g' /boot/cmdline.txt.orig > /boot/cmdline.txt  
+fi
+
+
+
