@@ -2,6 +2,13 @@
 # 
 # This script prepares avrdude for raspduino. 
 #
+# This script is copyright 2012 (C) BitWizard B.V. 
+# You're granted the right to use this script with your 
+# raspduino that you buy from BitWizard B.V. You have the
+# right to look at this copyright message at the top and
+# then decide that you're not allowed to run or copy it. 
+# All other rights reserved. 
+#
 myid=`id -u`
 if [ $myid -ne 0 ] ; then
    echo "You need to run this script as root. e.g. sudo $0"
@@ -13,7 +20,12 @@ for i in $required_programs ; do
    if [ ! -f /usr/bin/$i ] ; then
       # $i is not installed, lets install it. 
       echo  "----- Installing $i -----" 
-      apt-get install $i
+      if [ -z `which apt-get` ] ; then 
+         # Lets hope this works! (on arch). 
+         pacman -S --noconfirm $i
+      else
+         apt-get -y install $i
+      fi
    fi
 fi
 
