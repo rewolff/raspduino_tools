@@ -34,6 +34,7 @@ avrdudefile=`file /usr/bin/avrdude`
 case "$avrdudefile" in 
    *"ELF 32-bit LSB executable, ARM"*) 
       #
+      echo "Replacing avrdude with script to reset raspduino"
       if [ ! -f /usr/bin/avrdude.bin ] ; then
          mv /usr/bin/avrdude /usr/bin/avrdude.bin
       else 
@@ -48,14 +49,15 @@ case "$avrdudefile" in
 avrdude.bin "$@"
 EOF
       chmod 755 /usr/bin/avrdude
-      cat << EOF
+      cat << EOF > /usr/bin/reset_raspduino
 #!/bin/sh
-echo "25" > /sys/class/gpio/export
-echo "out" > /sys/class/gpio/gpio25/direction
-echo "1" > /sys/class/gpio/gpio25/value
+gpio_num=18
+echo $gpio_num > /sys/class/gpio/export
+echo out       > /sys/class/gpio/gpio25/direction
+echo 1         > /sys/class/gpio/gpio25/value
 sleep 0.05
-echo "0" > /sys/class/gpio/gpio25/value
-echo "25" > /sys/class/gpio/unexport
+echo 0         > /sys/class/gpio/gpio25/value
+echo $gpio_num > /sys/class/gpio/unexport
 EOF
       chmod 755 /usr/bin/reset_raspduino
       ;;
@@ -70,9 +72,15 @@ EOF
       ;;
 esac
 
-cp  80-raspduino.rules /etc/udev/rules.d
+
+if [ ! -f /etc/udev/rules.d/80-raspduino.rules ] ; then
+   echo "creating 80 raspduino rules (link ttyAMA to ttyS0)." 
+   echo 'KERNEL=="ttyAMA0", SYMLINK+="ttyS0",GROUP="dialout",MODE:=0666' \
+     > /etc/udev/rules.d/80-raspduino.rules
+fi
 
 if grep -q ttyAMA0 /etc/inittab ; then
+   echo "removing getty entry for ttyAMA0 from /etc/inittab"
    # ttyAMA0 is present in inittab...   
    if grep -q ^[^#].*ttyAMA0 ; then
       # ... and not commented out. Lets do that. 
@@ -90,10 +98,30 @@ else
 fi
 
 if grep -q ttyAMA0 /boot/cmdline.txt ; then
+   echo "removing ttyAMA0 as console from cmdline."
    mv /boot/cmdline.txt /boot/cmdline.txt.orig
    # remove ttyAMA references from cmdline.txt. Usually console= and kgdboc= . 
    sed -e 's/[^ ]*ttyAMA0[^ ]*//g' /boot/cmdline.txt.orig > /boot/cmdline.txt  
 fi
 
+if grep -q raspduino /usr/share/arduino/hardware/arduino ; then
+   echo "adding raspduino to arduino hardware list. " 
+   cat <<EOF >> /usr/share/arduino/hardware/arduino
+raspduino.name=Raspduino
+raspduino.upload.protocol=arduino
+raspduino.upload.maximum_size=32256
+raspduino.upload.speed=115200
+raspduino.bootloader.low_fuses=0xff
+raspduino.bootloader.high_fuses=0xde
+raspduino.bootloader.extended_fuses=0x05
+raspduino.bootloader.path=optiboot
+raspduino.bootloader.file=optiboot_atmega328.hex
+raspduino.bootloader.unlock_bits=0x3F
+raspduino.bootloader.lock_bits=0x0F
+raspduino.build.mcu=atmega328p
+raspduino.build.f_cpu=16000000L
+raspduino.build.core=arduino
+raspduino.build.variant=standard
+EOF
 
-
+fi
