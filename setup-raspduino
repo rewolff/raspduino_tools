@@ -15,6 +15,7 @@ if [ $myid -ne 0 ] ; then
    exit 1
 fi
 
+need_update=true
 required_programs="avrdude arduino"
 for i in $required_programs ; do
    if [ ! -f /usr/bin/$i ] ; then
@@ -24,10 +25,14 @@ for i in $required_programs ; do
          # Lets hope this works! (on arch). 
          pacman -S --noconfirm $i
       else
+         if $need_update ; then
+            apt-get update
+            need_update=false
+         fi
          apt-get -y install $i
       fi
    fi
-fi
+done
 
 avrdudefile=`file /usr/bin/avrdude`
 
@@ -82,7 +87,7 @@ fi
 if grep -q ttyAMA0 /etc/inittab ; then
    echo "removing getty entry for ttyAMA0 from /etc/inittab"
    # ttyAMA0 is present in inittab...   
-   if grep -q ^[^#].*ttyAMA0 ; then
+   if grep -q ^[^#].*ttyAMA0 /etc/inittab ; then
       # ... and not commented out. Lets do that. 
       mv /etc/inittab /etc/inittab.orig
       sed -e 's/\(.*\)ttyAMA0/#\1ttyAMA0/' /etc/inittab.orig > /etc/inittab
