@@ -27,7 +27,7 @@ for i in $required_programs ; do
          apt-get -y install $i
       fi
    fi
-fi
+done
 
 avrdudefile=`file /usr/bin/avrdude`
 
