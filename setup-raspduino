@@ -70,7 +70,7 @@ EOF
 esac
 
 echo ---------- checking reset_raspduino ----------------
-if [ ! -f [/usr/bin/reset_raspduino ] ; then
+if [ ! -f /usr/bin/reset_raspduino ] ; then
       echo "Creating reset_raspduino"
       cat << EOF > /usr/bin/reset_raspduino
 #!/bin/sh
