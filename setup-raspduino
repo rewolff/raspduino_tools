@@ -34,6 +34,7 @@ for i in $required_programs ; do
    fi
 done
 
+echo "----------- checking/updating avrdude -----------"
 avrdudefile=`file /usr/bin/avrdude`
 
 case "$avrdudefile" in 
@@ -68,7 +69,6 @@ EOF
       ;;
    *"POSIX shell script"*) 
       echo "It seems this script has already been run. No changes. Done!"
-      exit 0
       ;;
    *) 
       echo "Your avrdude is weird. Not an arm executeable but neither a shell script. "
