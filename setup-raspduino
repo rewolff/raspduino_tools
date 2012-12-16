@@ -15,6 +15,7 @@ if [ $myid -ne 0 ] ; then
    exit 1
 fi
 
+echo "---------- checking required packages ---------"
 need_update=true
 required_programs="avrdude arduino"
 for i in $required_programs ; do
@@ -31,6 +32,8 @@ for i in $required_programs ; do
          fi
          apt-get -y install $i
       fi
+   else 
+      echo "OK: You already have $i installed "
    fi
 done
 
@@ -68,7 +71,7 @@ EOF
       chmod 755 /usr/bin/reset_raspduino
       ;;
    *"POSIX shell script"*) 
-      echo "It seems this script has already been run. No changes. Done!"
+      echo "OK: It seems this script has already been run. No changes. Done!"
       ;;
    *) 
       echo "Your avrdude is weird. Not an arm executeable but neither a shell script. "
@@ -78,40 +81,50 @@ EOF
 esac
 
 
+echo ------------- creating raspduino.rules -----------------
 if [ ! -f /etc/udev/rules.d/80-raspduino.rules ] ; then
    echo "creating 80 raspduino rules (link ttyAMA to ttyS0)." 
    echo 'KERNEL=="ttyAMA0", SYMLINK+="ttyS0",GROUP="dialout",MODE:=0666' \
      > /etc/udev/rules.d/80-raspduino.rules
+else 
+   echo "OK: You already have a raspduino.rules."
 fi
 
+echo ------------- checking inittab -----------------
 if grep -q ttyAMA0 /etc/inittab ; then
-   echo "removing getty entry for ttyAMA0 from /etc/inittab"
    # ttyAMA0 is present in inittab...   
    if grep -q ^[^#].*ttyAMA0 /etc/inittab ; then
       # ... and not commented out. Lets do that. 
+      echo "removing getty entry for ttyAMA0 from /etc/inittab"
       mv /etc/inittab /etc/inittab.orig
       sed -e 's/\(.*\)ttyAMA0/#\1ttyAMA0/' /etc/inittab.orig > /etc/inittab
       chmod 644 /etc/inittab 
    else 
-      echo "You already have ttyAMA commented out. Good."
+      echo "OK: You already have ttyAMA commented out. Good."
    fi
 
 else
    # No ttyAMA in inittab
-   echo "You have no ttyAMA in your inittab. That's weird for a Raspberry pi system."
+   echo "OK: You have no ttyAMA in your inittab. That's weird for a Raspberry pi system."
    # Lets assume that's ok. 
 fi
 
+echo ------------- checking cmdline.txt -----------------
 if grep -q ttyAMA0 /boot/cmdline.txt ; then
    echo "removing ttyAMA0 as console from cmdline."
    mv /boot/cmdline.txt /boot/cmdline.txt.orig
    # remove ttyAMA references from cmdline.txt. Usually console= and kgdboc= . 
    sed -e 's/[^ ]*ttyAMA0[^ ]*//g' /boot/cmdline.txt.orig > /boot/cmdline.txt  
+else 
+   echo "OK: Your ttyAMA was already removed from cmdline.txt"
 fi
 
-if grep -q raspduino /usr/share/arduino/hardware/arduino ; then
-   echo "adding raspduino to arduino hardware list. " 
-   cat <<EOF >> /usr/share/arduino/hardware/arduino
+echo ------------- checking boards.txt -----------------
+btxt=/usr/share/arduino/hardware/arduino/boards.txt
+if ! grep -q raspduino $btxt ; then
+   echo "... adding raspduino to arduino hardware list. " 
+   cp $btxt $btxt.orig
+   cat <<EOF >> $btxt
 raspduino.name=Raspduino
 raspduino.upload.protocol=arduino
 raspduino.upload.maximum_size=32256
@@ -129,5 +142,7 @@ raspduino.build.core=arduino
 raspduino.build.variant=standard
 EOF
 
+else
+   echo "OK:  your boards.txt already has raspduino"
 fi
 #test
