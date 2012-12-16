@@ -55,7 +55,7 @@ case "$avrdudefile" in
 # This script replaces avrdude and resets the raspduino
 # in case you don't have the software DTR patch. 
 [ -f /etc/have_software_DTR ] || sudo reset_raspduino
-avrdude.bin "$@"
+avrdude.bin "\$@"
 EOF
       chmod 755 /usr/bin/avrdude
       ;;
