@@ -58,6 +58,20 @@ case "$avrdudefile" in
 avrdude.bin "$@"
 EOF
       chmod 755 /usr/bin/avrdude
+      ;;
+   *"POSIX shell script"*) 
+      echo "OK: It seems this script has already been run. No changes. Done!"
+      ;;
+   *) 
+      echo "Your avrdude is weird. Not an arm executeable but neither a shell script. "
+      echo "cannot continue."
+      exit 1
+      ;;
+esac
+
+echo ---------- checking reset_raspduino ----------------
+if [ ! -f [/usr/bin/reset_raspduino ] ; then
+      echo "Creating reset_raspduino"
       cat << EOF > /usr/bin/reset_raspduino
 #!/bin/sh
 gpio_num=18
@@ -69,16 +83,9 @@ echo 0         > /sys/class/gpio/gpio\$gpio_num/value
 echo \$gpio_num > /sys/class/gpio/unexport
 EOF
       chmod 755 /usr/bin/reset_raspduino
-      ;;
-   *"POSIX shell script"*) 
-      echo "OK: It seems this script has already been run. No changes. Done!"
-      ;;
-   *) 
-      echo "Your avrdude is weird. Not an arm executeable but neither a shell script. "
-      echo "cannot continue."
-      exit 1
-      ;;
-esac
+else
+   echo "OK: you allready have a reset_raspduino. "
+fi
 
 
 echo ------------- creating raspduino.rules -----------------
