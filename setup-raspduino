@@ -61,12 +61,12 @@ EOF
       cat << EOF > /usr/bin/reset_raspduino
 #!/bin/sh
 gpio_num=18
-echo $gpio_num > /sys/class/gpio/export
-echo out       > /sys/class/gpio/gpio25/direction
-echo 1         > /sys/class/gpio/gpio25/value
+echo \$gpio_num > /sys/class/gpio/export
+echo out       > /sys/class/gpio/gpio\$gpio_num/direction
+echo 1         > /sys/class/gpio/gpio\$gpio_num/value
 sleep 0.05
-echo 0         > /sys/class/gpio/gpio25/value
-echo $gpio_num > /sys/class/gpio/unexport
+echo 0         > /sys/class/gpio/gpio\$gpio_num/value
+echo \$gpio_num > /sys/class/gpio/unexport
 EOF
       chmod 755 /usr/bin/reset_raspduino
       ;;
