@@ -132,6 +132,9 @@ if ! grep -q raspduino $btxt ; then
    echo "... adding raspduino to arduino hardware list. " 
    cp $btxt $btxt.orig
    cat <<EOF >> $btxt
+
+
+######################################################
 raspduino.name=Raspduino
 raspduino.upload.protocol=arduino
 raspduino.upload.maximum_size=30720
