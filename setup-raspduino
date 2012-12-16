@@ -88,7 +88,7 @@ else
 fi
 
 
-echo ------------- creating raspduino.rules -----------------
+echo ------------- checking raspduino.rules -----------------
 if [ ! -f /etc/udev/rules.d/80-raspduino.rules ] ; then
    echo "creating 80 raspduino rules (link ttyAMA to ttyS0)." 
    echo 'KERNEL=="ttyAMA0", SYMLINK+="ttyS0",GROUP="dialout",MODE:=0666' \
