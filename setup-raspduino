@@ -145,4 +145,3 @@ EOF
 else
    echo "OK:  your boards.txt already has raspduino"
 fi
-#test
