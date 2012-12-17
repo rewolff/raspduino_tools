@@ -1,0 +1,29 @@
+
+This repository is called raspduino_tools, because we might
+add other stuff later on. But for now it has raspduino-setup
+and not much else. 
+
+Run the raspduino-setup script as root to prepare your raspberry
+for use with the raspduino. 
+
+It installs
+  avrdude
+  arduino
+
+It moves avrdude to avrdude.bin
+and installs a script that calls the binary after resetting
+the raspduino. 
+
+It creates the reset-raspduino script. 
+
+It installs a 80-raspduino-rules that links the ttyAMA0 to ttyS0, 
+because the arduino software doesn't expect a serial port to be
+called TTYAMA0. 
+
+It removes ttyAMA0 from /etc/inittab. 
+
+It removes ttyAMA from /boot/cmdline.txt. 
+
+It adds the raspduino to the boards.txt file. 
+
+
