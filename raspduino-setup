@@ -129,7 +129,7 @@ if [ -f $file ] ; then
       echo "OK: Your ttyAMA upstart config is already disabled. Good."
    fi
 else
-   echo "OK: You seem to not have upstart. Probably sysvinit. Fine."
+   echo "OK: You seem to not have ttyAMA0 upstart config. Fine."
 fi
       
 
