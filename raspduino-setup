@@ -70,9 +70,10 @@ EOF
 esac
 
 echo ---------- checking reset_raspduino ----------------
-if [ ! -f /usr/bin/reset_raspduino ] ; then
+file=/usr/bin/reset_raspduino
+if [ ! -f $file ] ; then
       echo "Creating reset_raspduino"
-      cat << EOF > /usr/bin/reset_raspduino
+      cat << EOF > $file
 #!/bin/sh
 gpio_num=18
 echo \$gpio_num > /sys/class/gpio/export
@@ -82,39 +83,56 @@ sleep 0.05
 echo 0         > /sys/class/gpio/gpio\$gpio_num/value
 echo \$gpio_num > /sys/class/gpio/unexport
 EOF
-      chmod 755 /usr/bin/reset_raspduino
+      chmod 755 $file
 else
    echo "OK: you allready have a reset_raspduino. "
 fi
 
 
 echo ------------- checking raspduino.rules -----------------
-if [ ! -f /etc/udev/rules.d/80-raspduino.rules ] ; then
+file=/etc/udev/rules.d/80-raspduino.rules
+if [ ! -f $file ] ; then
    echo "creating 80 raspduino rules (link ttyAMA to ttyS0)." 
    echo 'KERNEL=="ttyAMA0", SYMLINK+="ttyS0",GROUP="dialout",MODE:=0666' \
-     > /etc/udev/rules.d/80-raspduino.rules
+     > $file
 else 
    echo "OK: You already have a raspduino.rules."
 fi
 
 echo ------------- checking inittab -----------------
-if grep -q ttyAMA0 /etc/inittab ; then
+file=/etc/inittab
+if grep -q ttyAMA0 $file ; then
    # ttyAMA0 is present in inittab...   
-   if grep -q ^[^#].*ttyAMA0 /etc/inittab ; then
+   if grep -q ^[^#].*ttyAMA0 $file ; then
       # ... and not commented out. Lets do that. 
       echo "removing getty entry for ttyAMA0 from /etc/inittab"
-      mv /etc/inittab /etc/inittab.orig
-      sed -e 's/\(.*\)ttyAMA0/#\1ttyAMA0/' /etc/inittab.orig > /etc/inittab
-      chmod 644 /etc/inittab 
+      cp -p $file "$file".orig
+      sed -e 's/\(.*\)ttyAMA0/#\1ttyAMA0/' "$file".orig > $file
    else 
       echo "OK: You already have ttyAMA commented out. Good."
    fi
-
 else
    # No ttyAMA in inittab
    echo "OK: You have no ttyAMA in your inittab. That's weird for a Raspberry pi system."
    # Lets assume that's ok. 
 fi
+
+echo ------------- checking upstart -----------------
+file=/etc/init/ttyAMA0.conf
+if [ -f $file ] ; then
+   if ! grep -q manual $file ; then
+      echo "Disable autostart of ttyAMA getty."
+      # the .orig extension causes the file to be ignored by upstart.
+      cp $file $file.orig
+      echo manual >> $file
+   else
+      echo "OK: Your ttyAMA upstart config is already disabled. Good."
+   fi
+else
+   echo "OK: You seem to not have upstart. Probably sysvinit. Fine."
+fi
+      
+
 
 echo ------------- checking cmdline.txt -----------------
 if grep -q ttyAMA0 /boot/cmdline.txt ; then
@@ -127,11 +145,11 @@ else
 fi
 
 echo ------------- checking boards.txt -----------------
-btxt=/usr/share/arduino/hardware/arduino/boards.txt
-if ! grep -q raspduino $btxt ; then
+file=/usr/share/arduino/hardware/arduino/boards.txt
+if ! grep -q raspduino $file ; then
    echo "... adding raspduino to arduino hardware list. " 
-   cp $btxt $btxt.orig
-   cat <<EOF >> $btxt
+   cp $file $file.orig
+   cat <<EOF >> $file
 
 ##############################################################
 
